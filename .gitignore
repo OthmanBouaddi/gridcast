@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+**/node_modules/
+vendor/
+**/vendor/
+
+# Environment files
+.env
+.env.backup
+.env.production
+**/.env
+
+# Laravel & PHP
+/gridcast/public/build
+/gridcast/public/hot
+/gridcast/public/storage
+/gridcast/storage/*.key
+/gridcast/storage/pail
+/gridcast/storage/framework/views/*
+/gridcast/storage/framework/cache/*
+/gridcast/storage/framework/sessions/*
+/gridcast/storage/logs/*
+/gridcast/bootstrap/cache/*
+.phpunit.result.cache
+.phpunit.cache
+
+# Keep .gitignore or .gitkeep in storage directories
+!/gridcast/storage/framework/views/.gitignore
+!/gridcast/storage/framework/cache/.gitignore
+!/gridcast/storage/framework/sessions/.gitignore
+!/gridcast/storage/logs/.gitignore
+!/gridcast/bootstrap/cache/.gitignore
+
+# Databases & local data
+*.sqlite
+*.sqlite-journal
+*.log
+
+# LaTeX build outputs
+*.aux
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.fleet/
+.nova/
+.zed/
