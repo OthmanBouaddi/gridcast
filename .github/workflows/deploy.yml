@@ -1,0 +1,91 @@
+name: GridCast CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  code-quality:
+    name: Lint & Code Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
+          coverage: none
+
+      - name: Install Composer Dependencies
+        run: |
+          cd gridcast
+          composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check PSR-12 Linting (Laravel Pint)
+        run: |
+          cd gridcast
+          vendor/bin/pint --test
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check Frontend Linting (ESLint)
+        run: |
+          cd gridcast
+          npm ci
+          npm run lint
+
+  automated-testing:
+    name: Automated Tests (Pest PHP)
+    needs: code-quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
+          coverage: none
+
+      - name: Install Dependencies & Prepare SQLite
+        run: |
+          cd gridcast
+          cp .env.example .env
+          composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+          php artisan key:generate
+          touch database/database.sqlite
+
+      - name: Execute Pest Tests
+        run: |
+          cd gridcast
+          php artisan test --stop-on-failure
+
+  docker-build-and-deploy:
+    name: Docker Build & Production Deployment
+    needs: automated-testing
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./gridcast
+          file: ./gridcast/Dockerfile
+          push: false
+          tags: gridcast:latest

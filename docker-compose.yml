@@ -1,0 +1,125 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # App / Web Service: Laravel 12 + React 19 + Nginx + PHP-FPM
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: ./gridcast
+      dockerfile: Dockerfile
+    container_name: gridcast_app
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    environment:
+      APP_NAME: "GridCast"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: "http://localhost:8000"
+      LOG_CHANNEL: stack
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: gridcast
+      DB_USERNAME: gridcast_user
+      DB_PASSWORD: gridcast_password
+      SESSION_DRIVER: redis
+      QUEUE_CONNECTION: redis
+      CACHE_STORE: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - gridcast_network
+
+  # ----------------------------------------------------------------------------
+  # Database Service: MySQL 8.0
+  # ----------------------------------------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: gridcast_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: gridcast
+      MYSQL_USER: gridcast_user
+      MYSQL_PASSWORD: gridcast_password
+      MYSQL_ROOT_PASSWORD: secret_root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "gridcast_user", "-pgridcast_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gridcast_network
+
+  # ----------------------------------------------------------------------------
+  # Cache & Queue Driver: Redis 7.2
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7.2-alpine
+    container_name: gridcast_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - gridcast_network
+
+  # ----------------------------------------------------------------------------
+  # Queue Worker Daemon: Asynchronous notification & analytics jobs
+  # ----------------------------------------------------------------------------
+  queue:
+    build:
+      context: ./gridcast
+      dockerfile: Dockerfile
+    container_name: gridcast_queue
+    restart: unless-stopped
+    command: php /var/www/html/artisan queue:work redis --sleep=3 --tries=3 --timeout=90
+    environment:
+      APP_NAME: "GridCast"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: gridcast
+      DB_USERNAME: gridcast_user
+      DB_PASSWORD: gridcast_password
+      QUEUE_CONNECTION: redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - app_storage:/var/www/html/storage
+    depends_on:
+      - app
+      - db
+      - redis
+    networks:
+      - gridcast_network
+
+# ------------------------------------------------------------------------------
+# Persistent Volumes & Networks
+# ------------------------------------------------------------------------------
+volumes:
+  db_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_storage:
+    driver: local
+
+networks:
+  gridcast_network:
+    driver: bridge

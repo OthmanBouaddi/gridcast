@@ -1,29 +1,70 @@
 # GridCast - Plateforme de Gestion de Grille de Programmes TV
 
-GridCast est une application web conÁue pour une chaÓne de tÈlÈvision marocaine multi-langues (Arabe, Darija, FranÁais) permettant la planification de grille de diffusion, la soumission et validation des programmes, la rÈgie publicitaire, et le suivi d'audience.
+GridCast est une application web con√ßue pour une cha√Æne de t√©l√©vision marocaine multi-langues (Arabe, Darija, Fran√ßais) permettant la planification de grille de diffusion, la soumission et validation des programmes, la r√©gie publicitaire, et le suivi d'audience.
+
+Projet r√©alis√© dans le cadre du stage d'ing√©nieur √† **LionGeek** (Hub d'Innovation & Filiale de **SOREAD 2M**).
 
 ---
 
-## Stack Technique
+## üõ†Ô∏è Stack Technique
 
 - **Backend** : Laravel 12 (PHP 8.2+)
 - **Frontend** : Inertia.js v2 + React 19 + TypeScript
 - **Styling** : Tailwind CSS v4
-- **Composants / UI** : `@dnd-kit/core` (Drag & Drop calendrier), `recharts` (Analytique), `lucide-react` (Icones)
-- **Base de donnÈes** : SQLite / MySQL
-- **Tests** : Pest PHP
+- **Composants / UI** : `@dnd-kit/core` (Drag & Drop calendrier), `recharts` (Analytique), `lucide-react` (Ic√¥nes)
+- **Base de donn√©es** : MySQL 8.0 / SQLite
+- **Cache & Queues** : Redis 7.2
+- **Conteneurisation & DevOps** : Docker (Multi-stage build), Docker Compose, Nginx, Supervisor, GitHub Actions CI/CD
+- **Tests & Qualit√©** : Pest PHP, Laravel Pint (PSR-12), ESLint
 
 ---
 
-## ?? DÈmarrage Rapide
+## üê≥ D√©ploiement avec Docker (Production & Staging)
 
-### Option 1 : Via le script `startup.bat` (RecommandÈ sur Windows)
+L'architecture est enti√®rement conteneuris√©e avec **Docker Compose**, orchestrant 4 services :
+- **`app`** : Application GridCast (Nginx + PHP 8.2-FPM avec extensions MySQL, GD, Zip, OPcache)
+- **`db`** : Base de donn√©es relationnelle **MySQL 8.0** avec volume persistant
+- **`redis`** : Cache et gestionnaire de files d'attente asynchrones **Redis 7.2**
+- **`queue`** : Worker d'arri√®re-plan g√©r√© par **Supervisor** pour les notifications et calculs d'audience
 
-Double-cliquez simplement sur **`startup.bat`** ‡ la racine du projet ou dans `gridcast/`.
+### Lancement en 1 commande :
+
+```bash
+# Construire et d√©marrer tous les conteneurs en arri√®re-plan
+docker compose up -d --build
+```
+
+Ou sous Windows, double-cliquez simplement sur **`deploy-docker.bat`**.
+
+L'application sera accessible sur : **`http://localhost:8000`**
+
+### Commandes utiles Docker :
+
+```bash
+# V√©rifier l'√©tat des conteneurs
+docker compose ps
+
+# Voir les logs en direct
+docker compose logs -f app
+
+# Ex√©cuter les migrations manuellement (si besoin)
+docker compose exec app php artisan migrate --force
+
+# Arr√™ter les conteneurs
+docker compose down
+```
+
+---
+
+## ‚ö° D√©marrage Rapide en Local (Sans Docker)
+
+### Option 1 : Via le script `startup.bat` (Recommand√© sur Windows)
+
+Double-cliquez simplement sur **`startup.bat`** √† la racine du projet ou dans `gridcast/`.
 
 Le script se charge automatiquement de :
-1. VÈrifier les prÈrequis (PHP, Node.js, NPM).
-2. Initialiser `.env` et la base de donnÈes SQLite si nÈcessaire.
+1. V√©rifier les pr√©requis (PHP, Node.js, NPM).
+2. Initialiser `.env` et la base de donn√©es SQLite si n√©cessaire.
 3. Lancer le serveur backend Laravel (`http://127.0.0.1:8000`).
 4. Lancer le serveur frontend Vite.
 5. Ouvrir automatiquement votre navigateur.
@@ -33,7 +74,9 @@ Le script se charge automatiquement de :
 ### Option 2 : En ligne de commande
 
 ```bash
-# 1. Installer les dÈpendances
+cd gridcast
+
+# 1. Installer les d√©pendances
 composer install
 npm install
 
@@ -41,7 +84,7 @@ npm install
 cp .env.example .env
 php artisan key:generate
 
-# 3. Migrer et injecter les donnÈes de dÈmonstration
+# 3. Migrer et injecter les donn√©es de d√©monstration
 php artisan migrate:fresh --seed
 
 # 4. Lancer les serveurs
@@ -56,23 +99,23 @@ Rendez-vous ensuite sur [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 ---
 
-## ?? Utilisateurs de DÈmonstration (Comptes de Test)
+## üë• Utilisateurs de D√©monstration (Comptes de Test)
 
-Tous les comptes ont le mot de passe par dÈfaut : **`password`**
+Tous les comptes ont le mot de passe par d√©faut : **`password`**
 
-| RÙle | Email | PÈrimËtre & AccËs |
+| R√¥le | Email | P√©rim√®tre & Acc√®s |
 |---|---|---|
-| **Administrateur** | `admin@gridcast.ma` | AccËs complet, gestion globale & statistiques |
+| **Administrateur** | `admin@gridcast.ma` | Acc√®s complet, gestion globale & statistiques |
 | **Responsable Programmation** | `prog@gridcast.ma` | Grille des programmes, validation des soumissions |
-| **Producteur** | `producteur@gridcast.ma` | CrÈation de programmes, soumission, suivi d'Èpisodes |
-| **RÈgie Publicitaire** | `regie@gridcast.ma` | Annonceurs, crÈneaux publicitaires, chiffre d'affaires |
+| **Producteur** | `producteur@gridcast.ma` | Cr√©ation de programmes, soumission, suivi d'√©pisodes |
+| **R√©gie Publicitaire** | `regie@gridcast.ma` | Annonceurs, cr√©neaux publicitaires, chiffre d'affaires |
 
 ---
 
-## ?? Tests & QualitÈ de Code
+## üß™ Tests & Qualit√© de Code
 
 ```bash
-# ExÈcuter les tests Pest
+# Ex√©cuter les tests Pest
 php artisan test
 
 # Linting PHP (Laravel Pint - PSR-12)
